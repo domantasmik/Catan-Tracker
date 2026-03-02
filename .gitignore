@@ -1,0 +1,11 @@
+bin/
+obj/
+*.csproj.user
+appsettings.json
+appsettings.*.json
+.vs/
+.vscode/
+Properties/launchSettings.json
+*.log
+*.db
+*.sqlite

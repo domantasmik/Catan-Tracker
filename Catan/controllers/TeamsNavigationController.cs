@@ -64,5 +64,6 @@ public class TeamsNavigationController : ControllerBase
             return StatusCode(500, new { error = ex.Message });
         }
     }
+    //public ActionResult<List<Game>> GetGames([FromQuery] int teamId)
 
 }

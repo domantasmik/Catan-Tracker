@@ -5,8 +5,12 @@ using Catan.services;
 
 var builder = WebApplication.CreateBuilder(args);
 string connectionString = builder.Configuration["ConnectionStrings:DefaultConnection"];
+
+
 builder.Services.AddDbContext<CatanDbContext>(options => options.UseNpgsql(connectionString));
 builder.Services.AddScoped<PasswordHasher>();
+builder.Services.AddSingleton<WebSocketServer>(new WebSocketServer("ws://0.0.0.0:8181"));
+
 
 builder.Services.AddControllers();
 builder.Services.AddCors(options =>
