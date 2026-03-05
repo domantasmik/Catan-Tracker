@@ -3,26 +3,37 @@ using Microsoft.AspNetCore.Mvc;
 using Catan.models;
 using Catan.data;
 using Catan.services;
+using Catan;
 namespace Catan.controllers;
 [ApiController]
 [Route("game")]
 public class GameController : ControllerBase
 {
     private readonly CatanDbContext _dbContext;
-    private WebSocketServer _server;
-    public GameController(CatanDbContext dbContext, WebSocketServer server)
+    private WsHandler _wsHandler;
+    public GameController(CatanDbContext dbContext,WsHandler wsHandler)
     {
         _dbContext = dbContext;
-        _server = server;
+        _wsHandler = wsHandler;
     }
-    public ActionResult<Session> CreateServer(int userId, int teamId, Settings settings)
+    public record CreateGameRequest(int userId, int teamId, GameSettings settings);
+    [HttpPost("create")]
+    public ActionResult<Object> CreateServer([FromBody] CreateGameRequest request)
     {
-        var session = new GameSession(_server,_dbContext);
-        session.RunSession();
+        if(_wsHandler.GetActiveSession(request.teamId) !=null) return Conflict(new { error = "Game already exists for this team"});;
+        string sessionId = Guid.NewGuid().ToString();
+        
+        var session = new GameSession(sessionId,request.teamId,request.settings);
+        _wsHandler.AddSession(sessionId,session);
 
-        return Ok
-        //session = new GameSession(server)
-        //session.RunSession()
-        //return session id,connection
+        return Ok(new {gameId = sessionId});
+    }
+    [HttpGet("active")]
+    public ActionResult<Object> GetActiveSession([FromQuery] int teamId)
+    {
+        string sessionId = _wsHandler.GetActiveSession(teamId);
+        
+        if(sessionId == null) return NotFound(new { active = false});
+        return Ok(new {gameId = sessionId, active = true});
     }
 }

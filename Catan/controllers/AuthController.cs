@@ -37,6 +37,7 @@ public class AuthController : ControllerBase
     {
         try{
             string passwordHash = _hasher.Hash(request.Password);
+            if(_dbContext.Users.Any(u => u.Username == request.Username)) throw new Exception("username already exists");
             User user = new User(request.Username, passwordHash);
             _dbContext.Users.Add(user);
             _dbContext.SaveChanges();
