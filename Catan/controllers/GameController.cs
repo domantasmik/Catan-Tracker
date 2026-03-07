@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Catan.models;
 using Catan.data;
 using Catan.services;
-using Catan;
+using Catan.game;
 namespace Catan.controllers;
 [ApiController]
 [Route("game")]
