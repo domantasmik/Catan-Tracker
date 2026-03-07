@@ -1,6 +1,7 @@
 using Fleck;
 using System.Text.Json;
-namespace Catan;
+using Catan.models;
+namespace Catan.game;
 public class WsHandler {
     public WsHandler(){}
     private Dictionary<string, GameSession> _sessions = new();
@@ -25,7 +26,7 @@ public class WsHandler {
             ws.OnMessage = message => {
                 try
                 {
-                    var data = JsonSerializer.Deserialize<ActionData>(message);
+                    var data = JsonSerializer.Deserialize<ClientMessage>(message);
 
                     if (data?.SessionId == null) throw new Exception( "SessionId required");
                     if (!_sessions.ContainsKey(data.SessionId)) throw new Exception("Session not found");
@@ -44,19 +45,20 @@ public class WsHandler {
                     if(session.Value.ConnectionExists(ws)) 
                     {
                         var player = session.Value.RemoveConnection(ws);
-                        session.Value.SendToAll( new{
+                        ServiceResponse response = new ServiceResponse();
+                        response.Broadcast = new{
                             Type = "playerDisconnected", 
                             Payload = new {
                                 Id = player.Id, 
                                 Name = player.Name
                                 }
-                        });
+                        };
+                        session.Value.SendResponse(response,ws);
                     }
                     if(session.Value.GetConnectionCount() == 0)
                     {
                         //session.Value.LogGame()
                         _sessions.Remove(session.Key);
-                        Console.WriteLine("nieko nebeliko, pisu nx sessiona");
                     }
                 }
             };

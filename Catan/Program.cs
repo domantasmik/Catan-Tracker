@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Catan.data;
 using Catan.services;
-using Catan;
+using Catan.game;
 
 var builder = WebApplication.CreateBuilder(args);
 string connectionString = builder.Configuration["ConnectionStrings:DefaultConnection"];
