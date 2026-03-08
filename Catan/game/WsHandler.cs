@@ -9,7 +9,7 @@ public class WsHandler {
     {
         _sessions.Add(sessionId, session);
     }
-    public string GetActiveSession(int teamId)
+    public string? GetActiveSession(int teamId)
     {
         foreach(GameSession session in _sessions.Values)
         {

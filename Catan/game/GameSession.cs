@@ -41,8 +41,12 @@ public class GameSession
         {
             case "auth":
                 {
-                    _connections.TryGetValue(ws, out Player player);
+                    _connections.TryGetValue(ws, out Player? player);
                     response = _service.Auth(data.Payload, player);
+                    if(response.Player == null) {
+                        response = ServiceResponse.Error("auth failed");
+                        break;
+                    }
                     _connections[ws] = response.Player;
                     break;
                 }
@@ -54,6 +58,11 @@ public class GameSession
             case "nextTurn":
                 {
                     response = _service.NextTurn(_connections[ws],false);
+                    break;
+                }
+            case "updateResource":
+                {
+                    response = _service.UpdateResource(_connections[ws], data.Payload);
                     break;
                 }
         }
