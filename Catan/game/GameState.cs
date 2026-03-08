@@ -29,7 +29,7 @@ public class GameState
         }
         return exists;
     }
-    public Player GetPlayerById(int id)
+    public Player? GetPlayerById(int id)
     {
         foreach(var pl in _players)
         {

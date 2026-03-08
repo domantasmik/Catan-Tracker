@@ -31,8 +31,7 @@ public class GameController : ControllerBase
     [HttpGet("active")]
     public ActionResult<Object> GetActiveSession([FromQuery] int teamId)
     {
-        string sessionId = _wsHandler.GetActiveSession(teamId);
-        
+        string? sessionId = _wsHandler.GetActiveSession(teamId);
         if(sessionId == null) return NotFound(new { active = false});
         return Ok(new {gameId = sessionId, active = true});
     }

@@ -5,7 +5,7 @@ using Catan.services;
 using Catan.game;
 
 var builder = WebApplication.CreateBuilder(args);
-string connectionString = builder.Configuration["ConnectionStrings:DefaultConnection"];
+string? connectionString = builder.Configuration["ConnectionStrings:DefaultConnection"];
 
 
 builder.Services.AddDbContext<CatanDbContext>(options => options.UseNpgsql(connectionString));
