@@ -3,6 +3,35 @@ using Catan.DTO;
 using System.Text.Json;
 namespace Catan.game;
 
+// Cia krc gali buti problemu su race conditions, bet cia bsk advanced labai ir sunku pastebeti
+// Patarciau pasidometi, bet as pats buciau cia byby dejes 
+
+/* CIA GEMINI KOMENTARAS
+Gija A (Timeris): Įeina į NextTurn(null, true). Parametras timerExpired yra true.
+
+Gija A: Kadangi timerExpired == true, ji peršoka tavo if patikrinimą (kur tikrinamas žaidėjo ID).
+
+Gija B (Vartotojas): Įeina į NextTurn(p1, false). Ji prieina if patikrinimą.
+
+Gija A: Vykdo _state.NextTurn(). Dabar aktyvus žaidėjas pasikeičia iš P1 į P2.
+
+Gija B: Dabar vykdo savo if patikrinimą: _state.GetCurrentPlayer().Id != connectionPlayer.Id.
+
+    GetCurrentPlayer().Id dabar grąžina P2 (nes Gija A jį ką tik pakeitė!).
+
+    connectionPlayer.Id yra P1.
+
+    Pataikei! P2 != P1 yra True.
+
+Gija B: Kadangi sąlyga teisinga, ji nieko negrąžina ir eina toliau vykdyti kodo.
+
+Gija A: Pabaigia savo darbą.
+
+Gija B: Dar kartą iškviečia _state.NextTurn(). Dabar aktyvus žaidėjas pasikeičia iš P2 į P3.
+*/
+
+// Toliau sitam folderyje failu as nenoriu review, nes cia tsg daxuja kodo ir sudetingos logikos xd realybeje todel ir rekomenduojami mazi PR
+// Nes kai susijusi logika ir dar jos daug ir sudetingos, labai sunku reviewint
 public class GameService
 {
     private GameState _state;

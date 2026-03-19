@@ -18,11 +18,21 @@ public class TeamsNavigationController : ControllerBase
         _repository = repository;        
     }
     [HttpGet("mine")]
+    // Cia IEnumerable, ne List ir visur kur controllers grazina List, keisk i IEnuemrable
+    // Gemini komentaras
+    /*
+    IEnumerable sako: „Aš tau duodu duomenis skaitymui“. 
+    List sako: „Aš tau duodu konkretų krepšelį, kurį gali pildyti ar tuštinti“. 
+    API vartotojui (Frontendui) nereikia pildyti krepšelio tavo serveryje – jam reikia tik duomenų.
+    */
     public async Task<ActionResult<List<Team>>> GetTeams([FromQuery] int userId)
     {
         var teams = await _repository.GetUserTeams(userId);
         return Ok(new {teams = teams});
     }
+    // Cia tu naudoji primary konstruktoriu ir cia jau nera private.
+    // Kodel models/Player.cs properties didziaja raide, o cia jau mazaja? kalbu apie JoinRequest
+    // Ir cia isvis neturetu situ dalyku buti, JoinRequestDto, JoinResponseDto... visur kur record yra
     public record JoinRequest(int userId, int teamId);
     [HttpPost("join")]
     public async Task<ActionResult<Team>> JoinTeam([FromBody] JoinRequest request)

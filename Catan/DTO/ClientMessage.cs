@@ -1,5 +1,8 @@
 using System.Text.Json;
 namespace Catan.DTO;
+// Gal butu verta padaryt visus DTO's immutable (tinka visiems dto sitam folderyje.)
+// {get; init; }
+// Parasyk explicitly, kad cia Dto -> ClientMessageDto
 public class ClientMessage
 {
     public string SessionId{ get; set; } = String.Empty;

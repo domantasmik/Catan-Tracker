@@ -8,6 +8,9 @@ public class TeamMember
     public int UserId { get; set; }
     [Column("team_id")]
     public int TeamId { get; set; }
+
+    // Man asmeniskai labiau patinka tureti explicit konstruktorius, o ne primary. Cia priklauso nuo code style.
+    // Turetu rodyti quick fix: use primary constructor.
     public TeamMember(int userId, int teamId)
     {
         UserId = userId;

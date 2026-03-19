@@ -1,3 +1,6 @@
+// Isirayk koki code style cop ir kazka kas koda formatuos, common issues parodys ir paaiskins.
+// Rekomenduoju SonarQube ir formatteri koki. Toliau problemu, kurias parodys SonarQube nekomentuosiu.
+
 public class Player
 {
     public int Id{get;set;}
