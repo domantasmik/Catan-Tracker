@@ -24,6 +24,11 @@ public class CatanRepository : ICatanRepository
     }
     public async Task<List<Team>> GetUserTeams(int userId)
     {
+        // Ar cia tikrai reikia dvieju DB calls del tokio dalyko? hint: ne
+        // Return nemanau, kad cia reikia List<Team>, labiau IEnumereable<Team> ir jeigu reikes konvertuosi i list
+
+        // Isivaizduok, kad tu cia buildini query ir kai parasai ToListAsync() forcini .NET issiusti requesta i duomenu baze, nes itercija vyksta.
+        // Tau ToListAsync() vis tiek reikia, bet IEnumerable uzdraus modifikuoti duomenis, o leisi modifikuoti tik tada kai reikes.
         var teamIds = await _dbContext.TeamMembers.Where(tm => tm.UserId == userId).Select(tm => tm.TeamId).ToListAsync();
         var teams = await _dbContext.Teams.Where(t => teamIds.Contains(t.Id)).ToListAsync();
         return teams;
@@ -44,6 +49,10 @@ public class CatanRepository : ICatanRepository
     }
     public async Task UpdateLastLogin(User user)
     {
+        // Ne taip supratai repozitorijos principa. Repozitorija negali taip literaliai keisti duomenu.
+        // Ka turejau omenyje, kad repo skaito arba raso i duomenu baze per queries, o ne literaliai keicia objekta.
+        // Jei rasytum testus pamatytum kodel cia yra labai blogai.
+        // O testus rasysi visiem minimaliems dalykams visada, kai dirbsi.
         user.LastLogin = DateTime.UtcNow;
         await _dbContext.SaveChangesAsync();
     }

@@ -13,15 +13,19 @@ namespace Catan.controllers;
 public class GameController : ControllerBase
 {
     private readonly WsHandler _wsHandler;
+    // dbContext imeti, bet nenaudoji
     public GameController(CatanDbContext dbContext,WsHandler wsHandler)
     {
         _wsHandler = wsHandler;
     }
     public record CreateGameRequest(int userId, int teamId, GameSettings settings);
     [HttpPost("create")]
+    // Tu naudoji Object klase, o ne kintamaji. Visos klases prasideda is didziosios raides. Cia turi naudoji 'object'
     public ActionResult<Object> CreateServer([FromBody] CreateGameRequest request)
     {
+        // Susikurk konstatu failiuka ir susirasyk ten, o ne tiesiog strings metyk visur
         if(_wsHandler.GetActiveSession(request.teamId) !=null) throw new ConflictException("Game already exists for this team");
+        // Siaip as nekonvetuociau i string cia, kai siusi per endpointa .NET man atrodo automatiskai konvertuos kai reikes.
         string sessionId = Guid.NewGuid().ToString();
         
         var session = new GameSession(sessionId,request.teamId,request.settings);
