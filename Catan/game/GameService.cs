@@ -1,4 +1,5 @@
 using Catan.models;
+using Catan.DTO;
 using System.Text.Json;
 namespace Catan.game;
 
@@ -15,29 +16,45 @@ public class GameService
         _settings = settings;
         _gameStarted = false;
     }
-    public ServiceResponse Auth(JsonElement payload, Player? joinedPlayer)
+    public ServiceResponse Auth(Player joinedPlayer)
     {
         ServiceResponse response = new ServiceResponse();
+
         Player? player;
 
-        if (joinedPlayer != null && _state.PlayerExists(joinedPlayer)) player = _state.GetPlayerById(joinedPlayer.Id);
+        if (_state.PlayerExists(joinedPlayer)) player = _state.GetPlayerById(joinedPlayer.Id);
         else
         {
             if (_gameStarted) return ServiceResponse.Error("game already started");
             if (_state.EnoughPlayers()) return ServiceResponse.Error("lobby full");
             
-            player = JsonSerializer.Deserialize<Player>(payload);
-            if(player == null) return ServiceResponse.Error("auth failed");
+            player = joinedPlayer;
             _state.AddPlayer(player);
         }
-        if(player == null) return ServiceResponse.Error("auth failed");
         response.Player = player;
 
-        response.Private = new {
-            settings = new { 
-                _settings.TimerOn, 
-                _settings.TurnDuration 
-        }};
+        if (_gameStarted)
+        {
+            response.Private = new {
+                settings = new { 
+                    _settings.TimerOn, 
+                    _settings.TurnDuration 
+                },
+                Type = "nextTurn", 
+                Payload = new 
+                {
+                    Turn = _state.GetTurn(), 
+                    CurrentPlayer = _state.GetCurrentPlayer()
+                }   
+            };
+        }
+        else
+        {
+            response.Private = new {
+                settings = new { _settings.TimerOn, _settings.TurnDuration }
+            };
+        }
+        
         response.Broadcast = new { 
             Type = "playerJoined", 
             Payload = JsonSerializer.Serialize(_state.GetPlayers())
@@ -106,6 +123,49 @@ public class GameService
             Count = player.Resources[request.Resource]
         };
         return response;
+    }
+    private record UpdateRelationsRequest(Player Player, int NewValue);
+    public RelationUpdateResponse UpdateRelations(Player incomingPlayer, JsonElement payload)
+    {
+        RelationUpdateResponse response = new RelationUpdateResponse();
+        ServiceResponse? incomingResponse = new ServiceResponse();
+        ServiceResponse? outgoingResponse = new ServiceResponse();
+
+        var request = JsonSerializer.Deserialize<UpdateRelationsRequest>(payload);
+        if(request == null) 
+        {
+            response.Incoming = ServiceResponse.Error("failed to parse the request");
+            response.Outgoing = null;
+            return response;
+        }
+        Player? outgoingPlayer = _state.GetPlayerById(request.Player.Id);
+        if(outgoingPlayer == null)
+        {
+            response.Incoming = ServiceResponse.Error("outgoing player is null");
+            response.Outgoing = null;
+            return response;
+        }
+
+        incomingPlayer.Relations[outgoingPlayer.Id] = request.NewValue;
+        incomingResponse.Private = new
+        {
+            Type = "relationUpdateAck",
+            Payload = new
+            {
+                Player = outgoingPlayer,
+                NewValue = request.NewValue
+            }
+        };
+        outgoingResponse.Player = outgoingPlayer;
+        outgoingResponse.Private = new
+        {
+            Player = incomingPlayer,
+            NewValue = request.NewValue
+        };
+        response.Incoming = incomingResponse;
+        response.Outgoing = outgoingResponse;
+        return response;
+        
     }
     private void StopTimer()
     {

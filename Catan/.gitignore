@@ -1,0 +1,32 @@
+appsettings.json
+TODO.txt
+
+# Build results
+bin/
+obj/
+*.dll
+*.exe
+*.pdb
+
+# IDE
+.vs/
+.vscode/
+*.user
+*.suo
+*.sln.docstates
+
+# NuGet
+*.nupkg
+packages/
+.nuget/
+
+# Runtime
+*.log
+appsettings.*.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Dependencies
+node_modules/
