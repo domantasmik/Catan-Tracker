@@ -1,9 +1,15 @@
 using Fleck;
 using System.Text.Json;
 using Catan.models;
+using Catan.DTO;
+using Catan.services;
 namespace Catan.game;
 public class WsHandler {
-    public WsHandler(){}
+    private readonly JwtHandler _jwtHandler;
+    public WsHandler(JwtHandler jwtHandler)
+    {
+        _jwtHandler = jwtHandler;
+    }
     private Dictionary<string, GameSession> _sessions = new();
     public void AddSession(string sessionId, GameSession session)
     {
@@ -21,7 +27,17 @@ public class WsHandler {
         var server = new WebSocketServer("ws://0.0.0.0:8181");
         server.Start(ws => {
             ws.OnOpen = () => {
-                ws.Send("auth");//auth request
+                var path = ws.ConnectionInfo.Path;
+                var tokenAndId = path.Split("?token=").LastOrDefault();
+                string[] parts = tokenAndId!.Split("&sessionId=");
+                try{
+                    Player player = _jwtHandler.ValidateJwt(parts[0]);
+                    _sessions[parts[1]].Auth(player,ws);
+                }
+                catch(Exception ex)
+                {
+                    
+                }
             };
             ws.OnMessage = message => {
                 try

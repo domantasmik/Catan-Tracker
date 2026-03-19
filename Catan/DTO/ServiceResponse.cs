@@ -1,4 +1,4 @@
-namespace Catan.models;
+namespace Catan.DTO;
 public class ServiceResponse
 {
     public object? Broadcast{get;set;}

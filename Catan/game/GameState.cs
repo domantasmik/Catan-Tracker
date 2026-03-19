@@ -13,7 +13,7 @@ public class GameState
         _currentPlayerIndex = 0;
         _turnCount = 0;
     }
-    public bool PlayerExists(Player player)
+    public bool PlayerExists(Player? player)
     {
         bool exists = false;
 
@@ -42,7 +42,15 @@ public class GameState
     }
     public void AddPlayer(Player player)
     {
-        if(!PlayerExists(player)) _players.Add(player);
+        if(!PlayerExists(player))
+        {
+            foreach(var pl in _players)
+            {
+                pl.Relations[player.Id] = 0;
+                player.Relations[pl.Id] = 0;
+            }
+            _players.Add(player);
+        }
     }
     public List<Player> GetPlayers()
     {

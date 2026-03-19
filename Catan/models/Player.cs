@@ -6,10 +6,11 @@ public class Player
     { "DevCard", 0 },
     { "Point", 0 }
     };
+    public Dictionary<int,int> Relations = new();
 
     public Player(int id, string name)
     {
         Id = id;
-        Name = name;   
+        Name = name;
     }
 }
