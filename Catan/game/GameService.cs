@@ -1,32 +1,38 @@
 using Catan.models;
 using Catan.DTO;
 using System.Text.Json;
+using Catan.constants;
 namespace Catan.game;
 
+// TODO: race condition — timer and player can both call NextTurn concurrently, needs a lock
 public class GameService
 {
-    private GameState _state;
-    private GameSettings _settings;
+    private readonly GameState _state;
+    private readonly int _teamId;
+    private readonly GameEndHandler _endHandler;
+    private readonly GameSettings _settings;
     private bool _gameStarted;
     private System.Timers.Timer? _timer;
     public event Action<ServiceResponse>? OnTimerExpired;
-    public GameService(GameState state,GameSettings settings)
+    public GameService(GameState state,GameEndHandler endHandler,GameSettings settings, int teamId)
     {
         _state = state;
         _settings = settings;
+        _endHandler = endHandler;
         _gameStarted = false;
+        _teamId = teamId;
     }
     public ServiceResponse Auth(Player joinedPlayer)
     {
-        ServiceResponse response = new ServiceResponse();
+        ServiceResponse response = new();
 
-        Player? player;
+        Player player;
 
-        if (_state.PlayerExists(joinedPlayer)) player = _state.GetPlayerById(joinedPlayer.Id);
+        if (_state.PlayerExists(joinedPlayer)) player = _state.GetPlayerById(joinedPlayer.Id)!;
         else
         {
-            if (_gameStarted) return ServiceResponse.Error("game already started");
-            if (_state.EnoughPlayers()) return ServiceResponse.Error("lobby full");
+            if (_gameStarted) return ServiceResponse.Error(ErrorCode.GameStarted);
+            if (_state.EnoughPlayers()) return ServiceResponse.Error(ErrorCode.LobbyFull);
             
             player = joinedPlayer;
             _state.AddPlayer(player);
@@ -35,40 +41,46 @@ public class GameService
 
         if (_gameStarted)
         {
-            response.Private = new {
-                settings = new { 
-                    _settings.TimerOn, 
-                    _settings.TurnDuration 
-                },
-                Type = "nextTurn", 
+            response.Private = new ServiceResponse.ResponseDto
+            {
+                Type = WsMessageType.AuthAck, 
                 Payload = new 
                 {
+                    GameStarted = true,
                     Turn = _state.GetTurn(), 
-                    CurrentPlayer = _state.GetCurrentPlayer()
-                }   
+                    CurrentPlayer = _state.GetCurrentPlayer(),
+                    Settings = _settings
+                } 
             };
         }
         else
         {
-            response.Private = new {
-                settings = new { _settings.TimerOn, _settings.TurnDuration }
+            response.Private = new ServiceResponse.ResponseDto {
+                Type = WsMessageType.AuthAck,
+                Payload = new
+                {
+                    GameStarted = false,
+                    Settings = _settings
+                }
             };
         }
         
-        response.Broadcast = new { 
-            Type = "playerJoined", 
-            Payload = JsonSerializer.Serialize(_state.GetPlayers())
+        response.Broadcast = new ServiceResponse.ResponseDto{ 
+            Type = WsMessageType.PlayerJoined, 
+            Payload = new {
+                Players = _state.GetPlayers()
+            }
         };
         return response;
     }
     public ServiceResponse StartGame()
     {
         _gameStarted = true;
-        ServiceResponse response = new ServiceResponse();
+        ServiceResponse response = new();
         var currentPlayer = _state.GetCurrentPlayer();
 
-        response.Broadcast = new {
-            Type = "nextTurn", 
+        response.Broadcast = new ServiceResponse.ResponseDto {
+            Type = WsMessageType.NextTurn, 
             Payload = new 
             {
                 Turn = _state.GetTurn(), 
@@ -81,11 +93,11 @@ public class GameService
     }
     public ServiceResponse NextTurn(Player? connectionPlayer,bool timerExpired)
     {
-        ServiceResponse response = new ServiceResponse();
+        ServiceResponse response = new();
 
         if(!timerExpired && (connectionPlayer == null || _state.GetCurrentPlayer().Id != connectionPlayer.Id)) 
         {
-            return ServiceResponse.Error("not your turn");
+            return ServiceResponse.Error(ErrorCode.NotYourTurn);
         }
 
         if(_settings.TimerOn) StopTimer();
@@ -95,8 +107,8 @@ public class GameService
 
         if(_settings.TimerOn) StartTimer();
 
-        response.Broadcast = new {
-            Type = "nextTurn", 
+        response.Broadcast = new ServiceResponse.ResponseDto{
+            Type = WsMessageType.NextTurn, 
             Payload = new 
             {
                 Turn = _state.GetTurn(), 
@@ -105,66 +117,67 @@ public class GameService
         };
         return response;
     }
-    private record UpdateResourceRequest(string Resource, int Amount);
     public ServiceResponse UpdateResource(Player player,JsonElement payload)
     {
-        ServiceResponse response = new ServiceResponse();
+        ServiceResponse response = new();
 
-        UpdateResourceRequest? request = JsonSerializer.Deserialize<UpdateResourceRequest>(payload);
-        if(request == null) return ServiceResponse.Error("failed to parse the request");
+        UpdateResourceRequestDto? request = JsonSerializer.Deserialize<UpdateResourceRequestDto>(payload);
+        if(request == null) return ServiceResponse.Error(ErrorCode.FailedToDeserialize(nameof(UpdateResourceRequestDto)));
 
-        if(player.Resources[request.Resource] == 0 && request.Amount<0) return ServiceResponse.Error("cant have less than 0 "+request.Resource);
+        if(player.Resources[request.Resource] + request.Amount<0) return ServiceResponse.Error(ErrorCode.InvalidResourceAmount(request.Resource));
         player.Resources[request.Resource] += request.Amount;
 
-        response.Broadcast = new
-        {
-            Player = player,
-            Resource = request.Resource,
-            Count = player.Resources[request.Resource]
+        response.Broadcast = new ServiceResponse.ResponseDto{
+            Type = WsMessageType.ResourceUpdate,
+            Payload = new {
+                Player = player,
+                Resource = request.Resource,
+                Count = player.Resources[request.Resource]
+            }
         };
         return response;
     }
-    private record UpdateRelationsRequest(Player Player, int NewValue);
-    public RelationUpdateResponse UpdateRelations(Player incomingPlayer, JsonElement payload)
+    public (ServiceResponse, ServiceResponse?) UpdateRelations(Player incomingPlayer, JsonElement payload)
     {
-        RelationUpdateResponse response = new RelationUpdateResponse();
-        ServiceResponse? incomingResponse = new ServiceResponse();
-        ServiceResponse? outgoingResponse = new ServiceResponse();
+        ServiceResponse incomingResponse = new();
+        ServiceResponse? outgoingResponse = new();
 
-        var request = JsonSerializer.Deserialize<UpdateRelationsRequest>(payload);
+        var request = JsonSerializer.Deserialize<UpdateRelationsRequestDto>(payload);
         if(request == null) 
         {
-            response.Incoming = ServiceResponse.Error("failed to parse the request");
-            response.Outgoing = null;
-            return response;
+            incomingResponse = ServiceResponse.Error(ErrorCode.FailedToDeserialize(nameof(UpdateRelationsRequestDto)));
+            outgoingResponse = null;
+            return (incomingResponse,outgoingResponse);
         }
-        Player? outgoingPlayer = _state.GetPlayerById(request.Player.Id);
+        Player? outgoingPlayer = _state.GetPlayerById(request.PlayerId);
         if(outgoingPlayer == null)
         {
-            response.Incoming = ServiceResponse.Error("outgoing player is null");
-            response.Outgoing = null;
-            return response;
+            incomingResponse = ServiceResponse.Error(ErrorCode.PlayerNotFound);
+            outgoingResponse = null;
+            return (incomingResponse,outgoingResponse);    
         }
 
         incomingPlayer.Relations[outgoingPlayer.Id] = request.NewValue;
-        incomingResponse.Private = new
+        incomingResponse.Private = new ServiceResponse.ResponseDto
         {
-            Type = "relationUpdateAck",
+            Type = WsMessageType.RelationUpdateAck,
             Payload = new
             {
-                Player = outgoingPlayer,
+                PlayerId = outgoingPlayer.Id,
                 NewValue = request.NewValue
             }
         };
         outgoingResponse.Player = outgoingPlayer;
-        outgoingResponse.Private = new
+        outgoingResponse.Private = new ServiceResponse.ResponseDto
         {
-            Player = incomingPlayer,
-            NewValue = request.NewValue
+            Type = WsMessageType.RelationUpdate,
+            Payload = new
+            {
+                PlayerId = incomingPlayer.Id,
+                NewValue = request.NewValue
+            }
         };
-        response.Incoming = incomingResponse;
-        response.Outgoing = outgoingResponse;
-        return response;
+        return (incomingResponse,outgoingResponse);
         
     }
     private void StopTimer()
@@ -182,6 +195,21 @@ public class GameService
     {
         var response = NextTurn(null,true); // compute what happens when turn ends
         OnTimerExpired?.Invoke(response); // fire the event, passing response to all subscribers
+    }
+    public async Task<ServiceResponse> EndGame()
+    {
+        ServiceResponse response = new();
+
+        var game = GameEndHandler.RecordGame(_state, _teamId);
+        await _endHandler.SaveToDb(game);
+
+        response.Broadcast = new ServiceResponse.ResponseDto{
+            Type = WsMessageType.EndGame,
+            Payload =  new {
+                Game = game,
+            }
+        };
+        return response;
     }
 }
 

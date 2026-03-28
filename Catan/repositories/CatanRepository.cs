@@ -22,9 +22,9 @@ public class CatanRepository : ICatanRepository
         await _dbContext.Users.AddAsync(user);
         await _dbContext.SaveChangesAsync();
     }
-    public async Task<List<Team>> GetUserTeams(int userId)
+    public async Task<IEnumerable<Team>> GetUserTeams(int userId)
     {
-        var teamIds = await _dbContext.TeamMembers.Where(tm => tm.UserId == userId).Select(tm => tm.TeamId).ToListAsync();
+var teamIds = await _dbContext.TeamMembers.Where(tm => tm.UserId == userId).Select(tm => tm.TeamId).ToListAsync();
         var teams = await _dbContext.Teams.Where(t => teamIds.Contains(t.Id)).ToListAsync();
         return teams;
     }
@@ -44,7 +44,25 @@ public class CatanRepository : ICatanRepository
     }
     public async Task UpdateLastLogin(User user)
     {
-        user.LastLogin = DateTime.UtcNow;
+user.LastLogin = DateTime.UtcNow;
         await _dbContext.SaveChangesAsync();
+    }
+    public async Task SaveGame(Game game)
+    {
+        await _dbContext.Games.AddAsync(game);
+        await _dbContext.SaveChangesAsync();
+    }
+    public async Task AddPlayerToGame(GamePlayer gp)
+    {
+        await _dbContext.GamePlayers.AddAsync(gp);
+        await _dbContext.SaveChangesAsync();
+    }
+    public async Task<IEnumerable<Game>> GetGames(int teamId)
+    {
+        return await _dbContext.Games.Include(g => g.Players).Where(g => g.TeamId == teamId).ToListAsync();
+    }
+    public async Task<Game?> GetGameById(int id)
+    {
+        return await _dbContext.Games.Where(g => g.Id == id).FirstOrDefaultAsync();
     }
 }

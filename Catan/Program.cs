@@ -19,8 +19,7 @@ string jwtIssuer = builder.Configuration["Jwt:Issuer"]
 
 builder.Services.AddDbContext<CatanDbContext>(options => options.UseNpgsql(connectionString));
 builder.Services.AddScoped<ICatanRepository,CatanRepository>();
-builder.Services.AddScoped<PasswordHasher>();
-builder.Services.AddScoped<JwtHandler>();
+
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -38,7 +37,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 builder.Services.AddAuthorization();
 
 var wsHandler = new WsHandler(new JwtHandler(builder.Configuration));
-wsHandler.Start();
+await wsHandler.Start();
 
 builder.Services.AddSingleton<WsHandler>(wsHandler);
 
@@ -63,7 +62,7 @@ app.UseCors("AllowAll");
 app.MapControllers();
 
 
-app.Run();
+await app.RunAsync();
 
 
 
