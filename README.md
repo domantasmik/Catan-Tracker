@@ -1,6 +1,6 @@
-# Catan Tracker — Backend
+## Catan Tracker — Backend
 
-A learning project. Backend for tracking a physical game of Catan — players report what happens (resources, dev cards, reputation changes) and the app keeps score, manages turn order, and saves game history.
+A learning project. Backend for tracking a physical game of Catan - players report what happens (resources, dev cards, reputation changes) and the app keeps score, manages turn order, and saves game history.
 
 ---
 
