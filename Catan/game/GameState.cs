@@ -2,8 +2,8 @@ using Catan.models;
 namespace Catan.game;
 public class GameState
 {
-    private List<Player> _players;
-    private GameSettings _settings;
+    private readonly List<Player> _players;
+    private readonly GameSettings _settings;
     private int _currentPlayerIndex;
     private int _turnCount;
     public GameState(GameSettings settings)
@@ -13,11 +13,9 @@ public class GameState
         _currentPlayerIndex = 0;
         _turnCount = 0;
     }
-    public bool PlayerExists(Player? player)
+    public bool PlayerExists(Player player)
     {
         bool exists = false;
-
-        if(player == null) return exists;
 
         foreach(var pl in _players)
         {
@@ -36,7 +34,7 @@ public class GameState
             if(pl.Id == id)
             {
                 return pl;
-            };
+            }
         }
         return null;
     }
@@ -76,5 +74,19 @@ public class GameState
     public int GetTurn()
     {
         return _turnCount;
+    }
+    public int GetReputation(Player player)
+    {
+        int reputation = _players.Where(pl => pl.Id != player.Id).Select(pl => pl.Relations[player.Id]).Sum();
+        reputation/=_players.Count-1;
+        return reputation;
+    }
+    public Player GetWinner()
+    {
+        return _players.OrderByDescending(player => player.Resources["Point"]).First();
+    }
+    public bool GameFinished()
+    {
+        return GetWinner().Resources["Point"] >= _settings.PointsToWin;
     }
 }

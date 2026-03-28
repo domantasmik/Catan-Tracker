@@ -3,6 +3,8 @@ using Catan.models;
 using Catan.services;
 using Catan.repositories;
 using Catan.exceptions;
+using Catan.DTO;
+using Catan.constants;
 namespace Catan.controllers;
 
 [ApiController]
@@ -10,30 +12,28 @@ namespace Catan.controllers;
 public class AuthController : ControllerBase
 {
     private readonly ICatanRepository _repository;
-    private readonly PasswordHasher _hasher;
     private readonly JwtHandler _jwtHandler;
-    public AuthController(ICatanRepository repository, PasswordHasher hasher,JwtHandler jwtHandler)
+    public AuthController(ICatanRepository repository, JwtHandler jwtHandler)
     {
         _repository = repository;
-        _hasher = hasher;
         _jwtHandler = jwtHandler;
     }
-    public record AuthRequest(string Username, string Password);
-    [HttpPost("login")] 
-    public async Task<ActionResult<User>> Login([FromBody] AuthRequest request){
+    
+    [HttpPost("login")]
+    public async Task<ActionResult<User>> Login([FromBody] AuthRequestDto request){
         User? user = await _repository.GetUser(request.Username);
 
-        if (user == null || !_hasher.Verify(request.Password, user.PasswordHash)) throw new UnauthorizedException("Invalid username or password" );
+        if (user == null || !PasswordHasher.Verify(request.Password, user.PasswordHash)) throw new UnauthorizedException(ErrorCode.InvalidUsernameOrPassword);
         await _repository.UpdateLastLogin(user);
 
         return Ok(new {userId = user.Id, token = _jwtHandler.GenerateJwtString(user)});
     }
     [HttpPost("register")]
-    public async Task<ActionResult<User>> Register([FromBody] AuthRequest request)
+    public async Task<ActionResult<User>> Register([FromBody] AuthRequestDto request)
     {
-        if(await _repository.UserExists(request.Username)) throw new ConflictException("username already exists");
+        if(await _repository.UserExists(request.Username)) throw new ConflictException(ErrorCode.UsernameExists);
 
-        string passwordHash = _hasher.Hash(request.Password);
+        string passwordHash = PasswordHasher.Hash(request.Password);
         var user = new User(request.Username, passwordHash);
         await _repository.AddUser(user);
 

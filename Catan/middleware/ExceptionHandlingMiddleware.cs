@@ -1,10 +1,12 @@
 using Microsoft.AspNetCore.Mvc;
 using Catan.exceptions;
+using System.Net;
 
 namespace Catan.middleware;
 public class ExceptionHandlingMiddleware
 {
-    private RequestDelegate _next;
+    // readonly
+    private readonly RequestDelegate _next;
     public ExceptionHandlingMiddleware(RequestDelegate next)
     {
         _next = next;
@@ -22,6 +24,8 @@ public class ExceptionHandlingMiddleware
         }
         catch(Exception)
         {
+            // HttpStatusCode.InternalServerError
+            // Visur kur StatusCode grazini naudok geriau HttpStatusCode klase.
             context.Response.StatusCode = 500;
             await context.Response.WriteAsJsonAsync(new {error ="An unexpected error occurred"});
         }

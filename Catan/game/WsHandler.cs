@@ -3,6 +3,8 @@ using System.Text.Json;
 using Catan.models;
 using Catan.DTO;
 using Catan.services;
+using Catan.exceptions;
+using Catan.constants;
 namespace Catan.game;
 public class WsHandler {
     private readonly JwtHandler _jwtHandler;
@@ -10,7 +12,7 @@ public class WsHandler {
     {
         _jwtHandler = jwtHandler;
     }
-    private Dictionary<string, GameSession> _sessions = new();
+    private readonly Dictionary<string, GameSession> _sessions = new();
     public void AddSession(string sessionId, GameSession session)
     {
         _sessions.Add(sessionId, session);
@@ -23,61 +25,59 @@ public class WsHandler {
         }
         return null;
     }
-    public void Start() {
+    public async Task Start() {
         var server = new WebSocketServer("ws://0.0.0.0:8181");
         server.Start(ws => {
-            ws.OnOpen = () => {
-                var path = ws.ConnectionInfo.Path;
-                var tokenAndId = path.Split("?token=").LastOrDefault();
-                string[] parts = tokenAndId!.Split("&sessionId=");
-                try{
-                    Player player = _jwtHandler.ValidateJwt(parts[0]);
-                    _sessions[parts[1]].Auth(player,ws);
-                }
-                catch(Exception ex)
-                {
-                    
-                }
-            };
-            ws.OnMessage = message => {
-                try
-                {
-                    var data = JsonSerializer.Deserialize<ClientMessage>(message);
-
-                    if (data?.SessionId == null) throw new Exception( "SessionId required");
-                    if (!_sessions.ContainsKey(data.SessionId)) throw new Exception("Session not found");
-                    
-                    _sessions[data.SessionId].Execute(data, ws);
-                }
-                catch (Exception ex)
-                {
-                    ws.Send(JsonSerializer.Serialize(new { error = ex.Message }));
-                }
-            };
-            ws.OnClose = () =>
-            {
-                foreach(var session in _sessions)
-                {
-                    if(session.Value.ConnectionExists(ws)) 
-                    {
-                        var player = session.Value.RemoveConnection(ws);
-                        ServiceResponse response = new ServiceResponse();
-                        response.Broadcast = new{
-                            Type = "playerDisconnected", 
-                            Payload = new {
-                                Id = player.Id, 
-                                Name = player.Name
-                                }
-                        };
-                        session.Value.SendResponse(response,ws);
-                    }
-                    if(session.Value.GetConnectionCount() == 0)
-                    {
-                        //session.Value.LogGame()
-                        _sessions.Remove(session.Key);
-                    }
-                }
-            };
+            ws.OnOpen = () => HandleJoin(ws);
+            ws.OnMessage = async message => await RouteMessage(ws,message);
+            ws.OnClose = () => HandleDisconnect(ws);
         });
+    }
+    private void HandleJoin(IWebSocketConnection ws)
+    {
+        try{
+            var path = ws.ConnectionInfo.Path;
+            string[] tokenAndId = path.Split("?token=")[1].Split("&sessionId=");
+            var (token, sessionId) = (tokenAndId[0], tokenAndId[1]);
+
+            Player player = _jwtHandler.ValidateJwt(token) ?? throw new GameException(ErrorCode.JwtValidationFailed);
+
+            var response = _sessions[sessionId].Auth(player,ws);
+            _sessions[sessionId].SendResponse(response,ws);
+        }
+        catch (Exception e)
+        {
+            var response = ServiceResponse.Error(e.Message);
+            ws.Send(JsonSerializer.Serialize(response));
+            ws.Close();
+        }
+    }
+    private async Task RouteMessage(IWebSocketConnection ws, string message)
+    {
+        try{
+            ClientMessage data;
+            data = JsonSerializer.Deserialize<ClientMessage>(message) ?? throw new GameException(ErrorCode.FailedToDeserialize(nameof(ClientMessage)));
+
+            var response = await _sessions[data.SessionId].Execute(data, ws);
+            _sessions[data.SessionId].SendResponse(response,ws);
+        }
+        catch (Exception e)
+        {
+            var response = ServiceResponse.Error(e.Message);
+            await ws.Send(JsonSerializer.Serialize(response));
+        }
+    }
+    private void HandleDisconnect(IWebSocketConnection ws)
+    {
+        List<string> keys = new List<string>();
+        foreach(var session in _sessions)
+        {
+            if(session.Value.ConnectionExists(ws)) session.Value.SendResponse(session.Value.PlayerDisconnected(ws),ws);
+            if(session.Value.GetConnectionCount() == 0) keys.Add(session.Key);
+        }
+        foreach(string key in keys)
+        {
+            _sessions.Remove(key);
+        }
     }
 }

@@ -6,8 +6,8 @@ using Microsoft.IdentityModel.Tokens;
 namespace Catan.services;
 public class JwtHandler
 {
-    private string _key;
-    private string _issuer;
+    private readonly string _key;
+    private readonly string _issuer;
     public JwtHandler(IConfiguration config)
     {
         _key = config["Jwt:Key"]!;
@@ -15,7 +15,7 @@ public class JwtHandler
     }
     public string GenerateJwtString(User user)
     {
-        List<Claim> claims = new List<Claim>();
+        List<Claim> claims = new();
         claims.Add(new Claim("userId", user.Id.ToString()));
         claims.Add(new Claim("username", user.Username));
 
@@ -33,7 +33,7 @@ public class JwtHandler
         string tokenString = handler.WriteToken(token);
         return tokenString;
     }
-    public Player ValidateJwt(string token)
+    public Player? ValidateJwt(string token)
     {
         SecurityToken validatedToken;
         var handler = new JwtSecurityTokenHandler();
@@ -46,9 +46,12 @@ public class JwtHandler
             ValidIssuer = _issuer,
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_key))
         },out validatedToken);
-        if(!int.TryParse(claims.FindFirst("userId")?.Value,out int userId) ||  claims.FindFirst("username")?.Value == null) throw new Exception("failed parsing token");
+        var userIdClaim = claims.FindFirst("userId");
+        var usernameClaim = claims.FindFirst("username");
 
-        Player? player = new Player(userId, claims.FindFirst("username")?.Value!);
+        if(userIdClaim == null || usernameClaim == null) return null;
+
+        Player player = new(int.Parse(userIdClaim.Value), usernameClaim.Value);
         return player;
     }
 }
