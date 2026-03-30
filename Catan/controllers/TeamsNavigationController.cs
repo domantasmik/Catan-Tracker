@@ -48,10 +48,10 @@ public class TeamsNavigationController : ControllerBase
     public async Task<ActionResult<IEnumerable<Game>>> GetGames([FromQuery] int teamId)
     {
         var games = await _repository.GetGames(teamId);
-        var gameList = new List<GameDto>();
+        var gameList = new List<GameListDto>();
         foreach(var game in games)
         {
-            gameList.Add(new GameDto(game.Date, game.Name, game.Id));
+            gameList.Add(new GameListDto(game.Date, game.Name, game.Id));
         }
         var response = new GameHistoryDto(games.Count(), gameList);
         return Ok(new {games = response});
@@ -60,6 +60,13 @@ public class TeamsNavigationController : ControllerBase
     public async Task<ActionResult<Game>> GetGameById([FromRoute] int id)
     {
         var game = await _repository.GetGameById(id);
-        return Ok(new {game = game});
+        var gameDto = new GameDto(game);
+        return Ok(new{game = gameDto});
+    }
+    [HttpPatch("games/{id:int}/name")]
+    public async Task<ActionResult<string>> RenameGame([FromRoute] int id, [FromBody] RenameRequestDto request)
+    {
+        string gameName = await _repository.RenameGame(id,request.Name);
+        return Ok(new{name = gameName});
     }
 }

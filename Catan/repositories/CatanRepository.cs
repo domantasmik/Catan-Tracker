@@ -43,7 +43,7 @@ public class CatanRepository : ICatanRepository
     }
     public async Task UpdateLastLogin(User user)
     {
-user.LastLogin = DateTime.UtcNow;
+        user.LastLogin = DateTime.UtcNow;
         await _dbContext.SaveChangesAsync();
     }
     public async Task SaveGame(Game game)
@@ -63,5 +63,13 @@ user.LastLogin = DateTime.UtcNow;
     public async Task<Game?> GetGameById(int id)
     {
         return await _dbContext.Games.Include(g => g.GamePlayers).ThenInclude(gp => gp.User).Where(g => g.Id == id).FirstOrDefaultAsync();
+    }
+    public async Task<string> RenameGame(int id, string name)
+    {
+        var game = await _dbContext.Games.FirstOrDefaultAsync(g => g.Id == id);
+        game.Name = name;
+        //_dbContext.Games.Update(game);
+        await _dbContext.SaveChangesAsync();
+        return game.Name;
     }
 }

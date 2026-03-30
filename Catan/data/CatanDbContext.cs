@@ -27,5 +27,9 @@ public class CatanDbContext : DbContext
             .HasOne(g => g.User);
         modelBuilder.Entity<GamePlayer>()
             .HasKey(gp => new {gp.UserId, gp.GameId});
+
+        modelBuilder.Entity<Game>()
+            .Property(g => g.Date)
+            .HasDefaultValueSql("CURRENT_TIMESTAMP");
     }
 }

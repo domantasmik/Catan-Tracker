@@ -14,4 +14,5 @@ public interface ICatanRepository
     Task AddPlayerToGame(GamePlayer gp);
     Task<IEnumerable<Game>> GetGames(int teamId);
     Task<Game?> GetGameById(int id);
+    Task<string> RenameGame(int id, string name); 
 }
