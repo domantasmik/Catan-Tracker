@@ -23,6 +23,8 @@ public class Game
     public int TeamId{get;set;}
     [Column("finished")]
     public bool Finished{get;set;}
+    [Column("sheep_name")]
+    public string? SheepName{get;set;}
     public List<GamePlayer> GamePlayers {get;set;} = new List<GamePlayer>();
 
     public Game(){}

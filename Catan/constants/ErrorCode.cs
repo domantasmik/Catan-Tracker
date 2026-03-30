@@ -16,4 +16,6 @@ public static class ErrorCode
     public const string NullResponse = "NULL_RESPONSE";
     public const string InvalidMessageType = "INVALID_MESSAGE_TYPE";
     public const string JwtValidationFailed = "JWT_VALIDATION_FAILED";
+    public const string InvalidColor = "INVALID_COLOR";
+    public const string ColorNotSet = "COLOR_NOT_SET";
 }

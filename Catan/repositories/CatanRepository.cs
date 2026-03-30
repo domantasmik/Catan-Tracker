@@ -72,4 +72,19 @@ public class CatanRepository : ICatanRepository
         await _dbContext.SaveChangesAsync();
         return game.Name;
     }
+    public async Task UpdatePhotoUrl(int id, string url)
+    {
+        var game = await _dbContext.Games.FirstOrDefaultAsync(g => g.Id == id);
+        game.PhotoUrl = url;
+        //_dbContext.Games.Update(game);
+        await _dbContext.SaveChangesAsync();
+    }
+    public async Task<string> RenameSheep(int id, string name)
+    {
+        var game = await _dbContext.Games.FirstOrDefaultAsync(g => g.Id == id);
+        game.SheepName = name;
+        //_dbContext.Games.Update(game);
+        await _dbContext.SaveChangesAsync();
+        return game.SheepName;
+    }
 }

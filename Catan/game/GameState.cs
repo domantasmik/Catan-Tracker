@@ -1,4 +1,6 @@
 using Catan.models;
+using System.Reflection;
+using Catan.constants;
 namespace Catan.game;
 public class GameState
 {
@@ -6,6 +8,7 @@ public class GameState
     private readonly GameSettings _settings;
     private int _currentPlayerIndex;
     private int _turnCount;
+    private readonly HashSet<string> _unusedColors = typeof(Colors).GetFields(BindingFlags.Public | BindingFlags.Static).Select(f => f.Name).ToHashSet();
     public GameState(GameSettings settings)
     {
         _players = new List<Player>();
@@ -88,5 +91,17 @@ public class GameState
     public bool GameFinished()
     {
         return GetWinner().Resources["Point"] >= _settings.PointsToWin;
+    }
+    public HashSet<string> GetUnusedColors() 
+    {
+        return _unusedColors;
+    }
+    public void RemoveColor(string color)
+    {
+        _unusedColors.Remove(color);
+    }
+    public void AddColor(string color)
+    {
+        _unusedColors.Add(color);
     }
 }

@@ -8,17 +8,20 @@ public class GamePlayer
     public int GameId{get;set;}
     [Column("user_id")] 
     public int UserId{get;set;}
-    [Column("user_points")]
+    [Column("points")]
     public int PlayerPoints{get;set;}
-    [Column("user_reputation")]
+    [Column("reputation")]
     public int PlayerReputation{get;set;}
+    [Column("color")]
+    public string PlayerColor{get;set;}
     public User? User{get;set;}
     public GamePlayer(){}
-    public GamePlayer(int gameId, int userId, int playerPoints, int playerReputation)
+    public GamePlayer(int gameId, int userId, int playerPoints, int playerReputation, string playerColor)
     {
         GameId = gameId;
         UserId = userId;
         PlayerPoints = playerPoints;
         PlayerReputation = playerReputation;
+        PlayerColor = playerColor;
     }
 }

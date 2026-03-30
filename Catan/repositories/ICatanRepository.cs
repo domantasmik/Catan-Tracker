@@ -15,4 +15,6 @@ public interface ICatanRepository
     Task<IEnumerable<Game>> GetGames(int teamId);
     Task<Game?> GetGameById(int id);
     Task<string> RenameGame(int id, string name); 
+    Task UpdatePhotoUrl(int id, string url);
+    Task<string> RenameSheep(int id, string name);
 }

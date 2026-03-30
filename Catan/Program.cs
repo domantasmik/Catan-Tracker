@@ -8,6 +8,7 @@ using Catan.middleware;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using Microsoft.Extensions.FileProviders;
 
 var builder = WebApplication.CreateBuilder(args);
 string connectionString = builder.Configuration["ConnectionStrings:DefaultConnection"] 
@@ -52,11 +53,20 @@ builder.Services.AddCors(options =>
             .AllowAnyHeader();
     });
 });
-        
 
+var uploadPath = builder.Configuration["Storage:UploadPath"];
+Directory.CreateDirectory(uploadPath);
+        
 var app = builder.Build();
 
 app.UseMiddleware<ExceptionHandlingMiddleware>();
+
+app.UseStaticFiles(new StaticFileOptions
+    {
+        FileProvider = new PhysicalFileProvider(uploadPath),
+        RequestPath = "/images"
+});
+
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseCors("AllowAll");

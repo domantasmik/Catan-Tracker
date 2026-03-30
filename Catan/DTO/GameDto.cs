@@ -11,6 +11,7 @@ public record GameDto
     public int PlayerCount { get; init; }
     public int TeamId { get; init; }
     public bool Finished { get; init; }
+    public string SheepName{get;init;}
     public IEnumerable<GamePlayerDto> GamePlayers { get; init; }
 
     public GameDto(Game game)
@@ -24,9 +25,10 @@ public record GameDto
         PlayerCount = game.PlayerCount;
         TeamId = game.TeamId;
         Finished = game.Finished;
+        SheepName = game.SheepName;
         GamePlayers = game.GamePlayers.Select(gp =>
-            new GamePlayerDto(gp.UserId, gp.PlayerPoints, gp.PlayerReputation, gp.User.Username));
+            new GamePlayerDto(gp.UserId, gp.PlayerPoints, gp.PlayerReputation, gp.User.Username, gp.PlayerColor));
     }
 
-    public record GamePlayerDto(int Id, int Points, int Reputation, string Name);
+    public record GamePlayerDto(int Id, int Points, int Reputation, string Name, string Color);
 }

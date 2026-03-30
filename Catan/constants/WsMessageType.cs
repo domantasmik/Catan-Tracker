@@ -10,4 +10,5 @@ public static class WsMessageType
     public const string EndGame = "EndGame";
     public const string PlayerDisconnected = "PlayerDisconnected";
     public const string StartGame = "StartGame";
+    public const string ChangeColor = "ChangeColor";
 }

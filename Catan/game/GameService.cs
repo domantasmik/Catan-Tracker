@@ -75,10 +75,12 @@ public class GameService
     }
     public ServiceResponse StartGame()
     {
+        foreach(var pl in _state.GetPlayers()) if(pl.Color == Colors.NO_COLOR) return ServiceResponse.Error(ErrorCode.ColorNotSet);
+        
         _gameStarted = true;
         ServiceResponse response = new();
         var currentPlayer = _state.GetCurrentPlayer();
-
+        
         response.Broadcast = new ServiceResponse.ResponseDto {
             Type = WsMessageType.NextTurn, 
             Payload = new 
@@ -210,6 +212,32 @@ public class GameService
             }
         };
         return response;
+    }
+    public ServiceResponse ChangeColor(Player player, JsonElement payload)
+    {
+        var response = new ServiceResponse();
+        var request = JsonSerializer.Deserialize<ChangeColorRequest>(payload);
+
+        if (_state.GetUnusedColors().Contains(request.Color) || request.Color == Colors.NO_COLOR)
+        {
+            if(request.Color != Colors.NO_COLOR) _state.AddColor(player.Color);
+            _state.RemoveColor(request.Color);
+            player.Color = request.Color;
+            response.Broadcast = new ServiceResponse.ResponseDto
+            {
+                Type = WsMessageType.ChangeColor,
+                Payload = new
+                {
+                    PlayerId = player.Id,
+                    Color = player.Color
+                }
+            };
+            return response;
+        }
+        else
+        {
+            return ServiceResponse.Error(ErrorCode.InvalidColor);
+        }
     }
 }
 

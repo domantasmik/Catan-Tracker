@@ -105,6 +105,11 @@ public class GameSession
                     response = await _service.EndGame();
                     break;
                 }
+            case WsMessageType.ChangeColor:
+                {
+                    response = _service.ChangeColor(_connections[ws],data.Payload);
+                    break;
+                }
             default:
                 {
                     response = ServiceResponse.Error(ErrorCode.InvalidMessageType);

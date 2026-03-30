@@ -12,9 +12,11 @@ namespace Catan.controllers;
 public class TeamsNavigationController : ControllerBase
 {
     private readonly ICatanRepository _repository;
-    public TeamsNavigationController(ICatanRepository repository)
+    private readonly IConfiguration _configuration;
+    public TeamsNavigationController(ICatanRepository repository, IConfiguration configuration)
     {
-        _repository = repository;        
+        _repository = repository;   
+        _configuration = configuration;     
     }
     [HttpGet("mine")]
     public async Task<ActionResult<IEnumerable<List<Team>>>> GetTeams([FromQuery] int userId)
@@ -68,5 +70,28 @@ public class TeamsNavigationController : ControllerBase
     {
         string gameName = await _repository.RenameGame(id,request.Name);
         return Ok(new{name = gameName});
+    }
+    [HttpPost("games/{id}/photo")]
+    public async Task<IActionResult> UploadPhoto(int id, IFormFile file)
+    {
+        var allowed = new[] { ".jpg", ".jpeg", ".png", ".webp" };
+        var ext = Path.GetExtension(file.FileName).ToLower();
+        if (!allowed.Contains(ext)) return BadRequest("Invalid file type");
+
+        var fileName = $"{Guid.NewGuid()}{ext}";
+        var uploadPath = _configuration["Storage:UploadPath"];
+        var path = Path.Combine(uploadPath, fileName);
+
+        using var stream = System.IO.File.Create(path);
+        await file.CopyToAsync(stream);
+
+        await _repository.UpdatePhotoUrl(id, $"/images/{fileName}");
+        return Ok($"/images/{fileName}");
+    }
+    [HttpPatch("games/{id:int}/sheep")]
+    public async Task<ActionResult<string>> RenameSheep([FromRoute] int id, [FromBody] RenameRequestDto request)
+    {
+        string sheepName = await _repository.RenameSheep(id,request.Name);
+        return Ok(new{name = sheepName});
     }
 }

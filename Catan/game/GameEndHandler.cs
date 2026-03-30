@@ -19,11 +19,12 @@ public class GameEndHandler
             Name = "Zaidimas",
             PlayerCount = state.GetPlayers().Count,
             TeamId = teamId,
-            Finished = state.GameFinished()
+            Finished = state.GameFinished(),
+            SheepName = null
         };
         foreach(var player in state.GetPlayers())
         {
-            GamePlayer gp = new(game.Id, player.Id, player.Resources["Point"],state.GetReputation(player));
+            GamePlayer gp = new(game.Id, player.Id, player.Resources["Point"],state.GetReputation(player), player.Color);
             game.GamePlayers.Add(gp);
         }
         return game;

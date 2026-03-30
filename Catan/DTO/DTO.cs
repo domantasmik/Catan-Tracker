@@ -9,3 +9,4 @@ public record GameListDto(DateTime Date, string Name, int Id);
 public record UpdateRelationsRequestDto(int PlayerId, int NewValue);
 public record UpdateResourceRequestDto(string Resource, int Amount);
 public record RenameRequestDto(string Name);
+public record ChangeColorRequest(string Color);

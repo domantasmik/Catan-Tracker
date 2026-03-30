@@ -3,6 +3,7 @@ public class Player
 {
     public int Id{get;set;}
     public string Name{get;set;}
+    public string Color {get;set;}
     public Dictionary<string, int> Resources {get;set;} = new() {
     { "DevCard", 0 },
     { "Point", 0 }
@@ -13,5 +14,6 @@ public class Player
     {
         Id = id;
         Name = name;
+        Color = "NO_COLOR";
     }
 }
