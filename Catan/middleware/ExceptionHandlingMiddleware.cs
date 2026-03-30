@@ -22,12 +22,12 @@ public class ExceptionHandlingMiddleware
             context.Response.StatusCode = ex.HttpCode;
             await context.Response.WriteAsJsonAsync(new { error = ex.Message });
         }
-        catch(Exception)
+        catch(Exception ex)
         {
             // HttpStatusCode.InternalServerError
             // Visur kur StatusCode grazini naudok geriau HttpStatusCode klase.
             context.Response.StatusCode = 500;
-            await context.Response.WriteAsJsonAsync(new {error ="An unexpected error occurred"});
+            await context.Response.WriteAsJsonAsync(new {error =ex.Message});
         }
     }
 }

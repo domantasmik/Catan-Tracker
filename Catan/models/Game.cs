@@ -23,7 +23,7 @@ public class Game
     public int TeamId{get;set;}
     [Column("finished")]
     public bool Finished{get;set;}
-    public List<GamePlayer> Players {get;set;} = new List<GamePlayer>();
+    public List<GamePlayer> GamePlayers {get;set;} = new List<GamePlayer>();
 
     public Game(){}
 }

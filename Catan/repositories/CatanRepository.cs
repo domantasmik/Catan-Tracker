@@ -24,8 +24,7 @@ public class CatanRepository : ICatanRepository
     }
     public async Task<IEnumerable<Team>> GetUserTeams(int userId)
     {
-var teamIds = await _dbContext.TeamMembers.Where(tm => tm.UserId == userId).Select(tm => tm.TeamId).ToListAsync();
-        var teams = await _dbContext.Teams.Where(t => teamIds.Contains(t.Id)).ToListAsync();
+        var teams = await _dbContext.TeamMembers.Include(tm => tm.Team).Where(tm => tm.UserId == userId).Select(tm => tm.Team).ToListAsync();
         return teams;
     }
     public async Task<Team?> GetTeam(int teamId)
@@ -59,10 +58,10 @@ user.LastLogin = DateTime.UtcNow;
     }
     public async Task<IEnumerable<Game>> GetGames(int teamId)
     {
-        return await _dbContext.Games.Include(g => g.Players).Where(g => g.TeamId == teamId).ToListAsync();
+        return await _dbContext.Games.Where(g => g.TeamId == teamId).ToListAsync();
     }
     public async Task<Game?> GetGameById(int id)
     {
-        return await _dbContext.Games.Where(g => g.Id == id).FirstOrDefaultAsync();
+        return await _dbContext.Games.Include(g => g.GamePlayers).ThenInclude(gp => gp.User).Where(g => g.Id == id).FirstOrDefaultAsync();
     }
 }

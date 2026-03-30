@@ -48,13 +48,12 @@ public class TeamsNavigationController : ControllerBase
     public async Task<ActionResult<IEnumerable<Game>>> GetGames([FromQuery] int teamId)
     {
         var games = await _repository.GetGames(teamId);
-        var response = new GameHistoryDto
-        (
-            games.Count(),
-            games.Select(x => x.Date),
-            games.Select(x => x.Name),
-            games.Select(x => x.Id)
-        );
+        var gameList = new List<GameDto>();
+        foreach(var game in games)
+        {
+            gameList.Add(new GameDto(game.Date, game.Name, game.Id));
+        }
+        var response = new GameHistoryDto(games.Count(), gameList);
         return Ok(new {games = response});
     }
     [HttpGet("games/{id:int}")]

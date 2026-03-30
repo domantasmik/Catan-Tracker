@@ -23,8 +23,8 @@ public class GameEndHandler
         };
         foreach(var player in state.GetPlayers())
         {
-            GamePlayer gp = new(game.Id, player.Id,player.Resources["DevCard"], player.Resources["Point"],state.GetReputation(player));
-            game.Players.Add(gp);
+            GamePlayer gp = new(game.Id, player.Id, player.Resources["Point"],state.GetReputation(player));
+            game.GamePlayers.Add(gp);
         }
         return game;
     }

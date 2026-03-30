@@ -206,7 +206,7 @@ public class GameService
         response.Broadcast = new ServiceResponse.ResponseDto{
             Type = WsMessageType.EndGame,
             Payload =  new {
-                Game = game,
+                GameId = game.Id,
             }
         };
         return response;

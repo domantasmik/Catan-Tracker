@@ -21,8 +21,10 @@ public class CatanDbContext : DbContext
             .HasKey(tm => new { tm.UserId, tm.TeamId });
 
         modelBuilder.Entity<Game>()
-            .HasMany(g => g.Players);
+            .HasMany(g => g.GamePlayers);
             
+        modelBuilder.Entity<GamePlayer>()
+            .HasOne(g => g.User);
         modelBuilder.Entity<GamePlayer>()
             .HasKey(gp => new {gp.UserId, gp.GameId});
     }

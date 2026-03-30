@@ -19,6 +19,7 @@ string jwtIssuer = builder.Configuration["Jwt:Issuer"]
 
 builder.Services.AddDbContext<CatanDbContext>(options => options.UseNpgsql(connectionString));
 builder.Services.AddScoped<ICatanRepository,CatanRepository>();
+builder.Services.AddSingleton<JwtHandler>();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
